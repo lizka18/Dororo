@@ -1,0 +1,34 @@
+library(RMySQL)
+library(ggplot2)
+library(plotly)
+
+#соединение с бд
+con <- dbConnect(RMySQL::MySQL(), user = 'root', password ='admin', dbname='airport', host = '127.0.0.1')
+
+#получение данных из таблицы room
+res <- dbSendQuery(con, "SELECT * FROM ticker")
+stst <- dbFetch(res)
+dbClearResult(res)
+#Запрос 1
+res <- dbSendQuery(con, "SELECT flight.AirlinesName, sum(Coast) as Coast From ticker inner join flight on ticker.FlightID = flight.FlightID group by flight.AirlinesName;")
+stst <- dbFetch(res)
+dbClearResult(res)
+#Построение графика
+p <- ggplot(stst, aes(x=AirlinesName, y=Coast, fill = AirlinesName ))  +geom_bar(stat="identity") +ylab("Сборы") +xlab("Название авиакомпании") +ggtitle("Выручка авиакомпаний") +theme_bw() +theme(legend.position="none")
+p
+ggplotly(p)
+#Запрос 2
+res <- dbSendQuery(con, "select  CrewID , count(*) as Flight from flight group by  CrewID")
+stst <- dbFetch(res)
+dbClearResult(res)
+#Построение графика
+p <- ggplot(stst, aes(x=CrewID, y=Flight, fill = CrewID))  +geom_bar(stat="identity") +ylab("Кол-во полетов") +xlab("Номер экипажа") +ggtitle("Количество полетов по каждому экипажу") +theme_bw() +theme(legend.position="none")
+p
+ggplotly(p)
+#Запрос 3
+res <- dbSendQuery(con, "SELECT YEAR(Booking) as year, count(*) as num from ticker group by YEAR(Booking) order by YEAR(Booking)")
+stst <- dbFetch(res)
+dbClearResult(res)
+#График
+p <- plot_ly(stst, labels = ~stst$year, values = ~stst$num, type = 'pie', textposition = 'inside', textinfo = 'label+percent', insidetextfont = list(color = '#FFFFFF')) %>% layout(title = 'Количество купленных билетов по годам', xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE), yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+p
